@@ -1,37 +1,29 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework import status
-from rest_framework.views import APIView
+from rest_framework import generics 
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Post
 from .serializers import PostSerializer
+from .permissions import IsOwnerOfPost
 
-class PostList(APIView):
-    def get(self, request):
-        queryset = Post.objects.all()
-        serializer = PostSerializer(queryset, many=True)
-        return Response(serializer.data)
 
-    def post(self, request):
-        serializer = PostSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+class PostList(generics.ListCreateAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    http_method_names = ['head', 'options', 'get', 'post']
     
-class PostDetail(APIView):
-    def get(self, request, id):
-        post = get_object_or_404(Post, pk=id)
-        serializer = PostSerializer(post)
-        return Response(serializer.data)
-
-    def put(self, request, id):
-        post = get_object_or_404(Post, pk=id)
-        serializer = PostSerializer(post, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
     
-    def delete(self, request, id):
-        post = get_object_or_404(Post, pk=id)
-        post.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-        
+class PostDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    http_method_names = ['head', 'options', 'get', 'put', 'delete']
+
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'DELETE']:
+            return [IsOwnerOfPost()]
+        return [AllowAny()]
