@@ -13,7 +13,21 @@ class UserCreateSerializer(BaseUserCreateSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     # author = UserSerializer(read_only=True)
+    likes = serializers.SerializerMethodField()
+    dislikes = serializers.SerializerMethodField()
+    
+    def get_likes(self, post_item: Post):
+        return post_item.likes.count()
+    
+    def get_dislikes(self, post_item: Post):
+        return post_item.dislikes.count()
 
     class Meta:
         model = Post
-        fields = ['id', 'author', 'title', 'body', 'likes', 'created_at', 'updated_at']
+        fields = ['id', 'author', 'title', 'body', 'likes', 'dislikes', 'created_at', 'updated_at']
+
+
+class PostLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ['id', 'likes']
